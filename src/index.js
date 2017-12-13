@@ -68,3 +68,5 @@ setInterval(() => {
         process.exit(1);
     });
 }, utils.minutesToMillis(MINUTES));
+
+console.log('Starting application');
