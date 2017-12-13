@@ -28,6 +28,14 @@ class CoinPrice {
     }
 
     /**
+     * Returns the price formatted as a USD currency value
+     */
+    prettyPrice () {
+        let price = this.priceAsFloat();
+        return price.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    }
+
+    /**
      * Returns a pretty string representation of the CoinPrice
      */
     toString () {

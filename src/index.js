@@ -54,9 +54,13 @@ setInterval(() => {
         if (bigChanges.length > 0) {
             // Compute the subject and body of the email
             const subject = bigChanges.map(change => `${change.coinPrice.prettyName()} ${change.percentChange > 0 ? 'up' : 'down'}`).join(', ') + ` ${date.toUTCString()}`;
-            const lines = bigChanges.map(change => ({
+            const lines = [{
+                style: 'color: black',
+                text: `Significant changes in the last ${MINUTES} minutes:`
+            }];
+            bigChanges.forEach(change => lines.push({
                 style: `color: ${change.percentChange > 0 ? 'green' : 'red'}`,
-                text: `${change.coinPrice.coin}: ${change.coinPrice.price} USD, change: ${change.percentChange.toPrecision(3)} %`
+                text: `${change.coinPrice.coin}: ${change.coinPrice.prettyPrice()}, change: ${change.percentChange.toPrecision(3)} %`
             }));
             const body = Mailer.buildBody(lines);
             // Send the email

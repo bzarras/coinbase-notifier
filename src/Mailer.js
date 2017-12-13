@@ -52,7 +52,7 @@ class Mailer {
         let html = `<html>
         <head></head>
         <body>
-            <ul>${lines.map(line => `<li style="${line.style}">${line.text}</li>`).join('')}</ul>
+        ${lines.map(line => `<p style="${line.style}">${line.text}</p>`).join('')}
         </body>
         </html>`;
         return html;
