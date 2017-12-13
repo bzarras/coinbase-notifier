@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "mocha",
-    "aws-build": "git archive -v -o build/coinbase-notifier.zip --format=zip HEAD"
+    "aws-build": "git archive -v -o ./build/coinbase-notifier.zip --format=zip HEAD"
   },
   "author": "Ben Zarras",
   "license": "MIT",
