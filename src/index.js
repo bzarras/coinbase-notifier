@@ -2,40 +2,27 @@
 
 require('dotenv').config();
 
-const Promise = require('bluebird'),
+const express = require('express'),
+    Promise = require('bluebird'),
+    Coinbase = require('./services/Coinbase'),
+    Mailer = require('./services/Mailer'),
     CoinPrice = require('./CoinPrice'),
     PriceQueue = require('./PriceQueue'),
-    Mailer = require('./Mailer'),
     utils = require('./utils'),
-    MINUTES = parseFloat(process.env.POLL_MINUTES),
     ALERT_PERCENTAGE = parseFloat(process.env.ALERT_PERCENTAGE),
-    Client = require('coinbase').Client,
-    client = new Client({
-        apiKey: process.env.COINBASE_KEY,
-        apiSecret: process.env.COINBASE_SECRET
-    }),
-    getSpotPrice = Promise.promisify(client.getSpotPrice, { context: client });
+    PORT = process.env.PORT || 5000;
 
-/**
- * Takes in an array of currencyPair strings (see Coinbase API docs) and fetches prices for each
- * @param {Array<String>} currencyPairs
- * @return {Promise<Array<CoinPrice>>}
- */
-function fetchCoinPrices (currencyPairs) {
-    return Promise.all(currencyPairs.map(pair => getSpotPrice({ currencyPair: pair })))
-        .then(priceResponses => priceResponses.map(res => new CoinPrice(res)));
-}
-
+const app = express();
 // Queues to keep track of changes in prices over time
 const bitcoinQueue = new PriceQueue('BTC', 2),
     etherQueue = new PriceQueue('ETH', 2),
     litecoinQueue = new PriceQueue('LTC', 2);
 
-// Code to be executed on a regular interval
-setInterval(() => {
+app.get('/v1/alerts/:interval', async (req, res, next) => {
+    console.log(`Performing analysis for ${req.params.interval} min interval`);
     const date = new Date();
-    fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD'])
-    .then(coinPrices => {
+    try {
+        const coinPrices = await Coinbase.fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD']);
         const queues = [bitcoinQueue, etherQueue, litecoinQueue];
         const bigChanges = []; // An array to keep track of big price changes
         queues.forEach((queue, i) => {
@@ -65,12 +52,15 @@ setInterval(() => {
             const body = Mailer.buildBody(lines);
             // Send the email
             Mailer.sendEmail(subject, body);
+        } else {
+            console.log('Stable price. No need to send email.');
         }
-    })
-    .catch(err => {
+    } catch (err) {
         console.log(err);
         process.exit(1);
-    });
-}, utils.minutesToMillis(MINUTES));
+    }
+});
 
-console.log('Starting application');
+app.listen(PORT, () => {
+    console.log(`App listening on port ${PORT}`);
+});
