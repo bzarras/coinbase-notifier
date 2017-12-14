@@ -6,7 +6,6 @@ const express = require('express'),
     Promise = require('bluebird'),
     Coinbase = require('./services/Coinbase'),
     Mailer = require('./services/Mailer'),
-    CoinPrice = require('./CoinPrice'),
     PriceQueue = require('./PriceQueue'),
     utils = require('./utils'),
     ALERT_PERCENTAGE = parseFloat(process.env.ALERT_PERCENTAGE),
@@ -19,8 +18,8 @@ const bitcoinQueue = new PriceQueue('BTC', 2),
     litecoinQueue = new PriceQueue('LTC', 2);
 
 app.post('/v1/alerts/:interval', async (req, res, next) => {
-    console.log(`Performing analysis for ${req.params.interval} min interval`);
     const date = new Date();
+    console.log(`${date.toUTCString()} Performing analysis for ${req.params.interval} min interval`);
     try {
         const coinPrices = await Coinbase.fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD']);
         const queues = [bitcoinQueue, etherQueue, litecoinQueue];
@@ -55,9 +54,10 @@ app.post('/v1/alerts/:interval', async (req, res, next) => {
         } else {
             console.log('Stable price. No need to send email.');
         }
+        res.sendStatus(204);
     } catch (err) {
         console.log(err);
-        process.exit(1);
+        res.sendStatus(500);
     }
 });
 
