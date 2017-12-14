@@ -1,7 +1,8 @@
 'use strict';
 
 const AWS = require('aws-sdk'),
-    recipients = process.env.RECIPIENTS.split(','),
+    Promise = require('bluebird'),
+    TABLE_NAME = process.env.RECIPIENT_TABLE_NAME,
     charset = 'utf-8';
 
 AWS.config.update({
@@ -11,6 +12,16 @@ AWS.config.update({
 });
 
 const SES = new AWS.SES();
+const dynamoClient = new AWS.DynamoDB.DocumentClient();
+const scanRecipientsAsync = Promise.promisify(dynamoClient.scan, { context: dynamoClient });
+const sendEmailAsync = Promise.promisify(SES.sendEmail, { context: SES });
+
+class Recipients {
+    static async fetchAll () {
+        let data = await scanRecipientsAsync({ TableName: TABLE_NAME });
+        return data.Items.map(item => item.email);
+    }
+}
 
 class Mailer {
     /**
@@ -18,7 +29,8 @@ class Mailer {
      * @param {String} subject 
      * @param {String} body   should be html
      */
-    static sendEmail (subject, body) {
+    static async sendEmail (subject, body) {
+        const recipients = await Recipients.fetchAll();
         const mailOptions = {
             Source: '"Coinbase Watcher" <benzarras@gmail.com>',
             Destination: {
@@ -37,10 +49,12 @@ class Mailer {
                 }
             }
         };
-        SES.sendEmail(mailOptions, (err, data) => {
-            if (err) console.log(err, err.message);
-            else console.log(data);
-        });
+        try {
+            const data = await sendEmailAsync(mailOptions);
+            console.log(`Successfully sent email.`);
+        } catch (err) {
+            console.log(err, err.message);
+        }
     }
 
     /**
