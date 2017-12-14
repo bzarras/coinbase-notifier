@@ -1,6 +1,7 @@
 'use strict';
 
 const Promise = require('bluebird'),
+    CoinPrice = require('../CoinPrice'),
     Client = require('coinbase').Client,
     client = new Client({
         apiKey: process.env.COINBASE_KEY,
