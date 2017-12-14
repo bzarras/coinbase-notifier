@@ -18,7 +18,7 @@ const bitcoinQueue = new PriceQueue('BTC', 2),
     etherQueue = new PriceQueue('ETH', 2),
     litecoinQueue = new PriceQueue('LTC', 2);
 
-app.get('/v1/alerts/:interval', async (req, res, next) => {
+app.post('/v1/alerts/:interval', async (req, res, next) => {
     console.log(`Performing analysis for ${req.params.interval} min interval`);
     const date = new Date();
     try {
