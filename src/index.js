@@ -53,10 +53,10 @@ setInterval(() => {
         // If we have some big changes, send an email about it
         if (bigChanges.length > 0) {
             // Compute the subject and body of the email
-            const subject = bigChanges.map(change => `${change.coinPrice.prettyName()} ${change.percentChange > 0 ? 'up' : 'down'}`).join(', ') + ` ${date.toUTCString()}`;
+            const subject = bigChanges.map(change => `${change.coinPrice.prettyName()} ${change.percentChange > 0 ? 'up' : 'down'}`).join(', ');
             const lines = [{
                 style: 'color: black',
-                text: `Significant changes in the last ${MINUTES} minutes:`
+                text: `${date.toUTCString()} - Significant changes in the last ${MINUTES} minutes:`
             }];
             bigChanges.forEach(change => lines.push({
                 style: `color: ${change.percentChange > 0 ? 'green' : 'red'}`,
