@@ -17,11 +17,11 @@ const bitcoinQueue = new PriceQueue('BTC', 2),
     etherQueue = new PriceQueue('ETH', 2),
     litecoinQueue = new PriceQueue('LTC', 2);
 
-app.post('/v1/alerts/:interval', (req, res, next) => {
+app.post('/v1/alerts/:interval', async (req, res, next) => {
     const date = new Date();
     console.log(`${date.toUTCString()} Performing analysis for ${req.params.interval} min interval`);
-    Coinbase.fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD'])
-    .then(coinPrices => {
+    try {
+        const coinPrices = await Coinbase.fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD']);
         const queues = [bitcoinQueue, etherQueue, litecoinQueue];
         const bigChanges = []; // An array to keep track of big price changes
         queues.forEach((queue, i) => {
@@ -55,10 +55,10 @@ app.post('/v1/alerts/:interval', (req, res, next) => {
             console.log('Stable price. No need to send email.');
         }
         res.sendStatus(200); // NEED to return 200 for AWS worker environment. Even 204 is considered an error.
-    }).catch(err => {
+    } catch (err) {
         console.log(err);
-        res.sendStatus(500);
-    });
+        res.sendStatus(200); // Still returning 200 here because we don't want AWS to resend the POST.
+    }
 });
 
 app.listen(PORT, () => {
