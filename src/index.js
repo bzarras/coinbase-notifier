@@ -54,7 +54,7 @@ app.post('/v1/alerts/:interval', (req, res, next) => {
         } else {
             console.log('Stable price. No need to send email.');
         }
-        res.sendStatus(204);
+        res.sendStatus(200); // NEED to return 200 for AWS worker environment. Even 204 is considered an error.
     }).catch(err => {
         console.log(err);
         res.sendStatus(500);
