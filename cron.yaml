@@ -2,4 +2,4 @@ version: 1
 cron:
 - name: "five-minute-alert"
   url: "/v1/alerts/5"
-  schedule: "0/5 * * * *"
+  schedule: "*/5 * * * *"
