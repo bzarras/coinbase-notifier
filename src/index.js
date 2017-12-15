@@ -18,8 +18,9 @@ const bitcoinQueue = new PriceQueue('BTC', 2),
     litecoinQueue = new PriceQueue('LTC', 2);
 
 app.post('/v1/alerts/:interval', async (req, res, next) => {
+    const MINUTES = req.params.interval;
     const date = new Date();
-    console.log(`${date.toUTCString()} Performing analysis for ${req.params.interval} min interval`);
+    console.log(`${date.toUTCString()} Performing analysis for ${MINUTES} min interval`);
     try {
         const coinPrices = await Coinbase.fetchCoinPrices(['BTC-USD', 'ETH-USD', 'LTC-USD']);
         const queues = [bitcoinQueue, etherQueue, litecoinQueue];
