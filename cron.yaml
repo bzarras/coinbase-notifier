@@ -1,5 +1,5 @@
 version: 1
 cron:
-  - name: "five-minute-alert"
-    url: "/v1/alerts/5"
-    schedule: "5,10,15,20,25,30,35,40,45,50,55,00 * * * *"
+- name: "five-minute-alert"
+  url: "/v1/alerts/5"
+  schedule: "0/5 * * * *"
