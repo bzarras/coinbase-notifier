@@ -5,10 +5,11 @@ require('dotenv').config();
 const express = require('express'),
     Promise = require('bluebird'),
     Coinbase = require('./services/Coinbase'),
-    Mailer = require('./services/Mailer'),
+    { Mailer, Recipients } = require('./services/Mailer'),
     PriceQueue = require('./PriceQueue'),
     utils = require('./utils'),
     ALERT_PERCENTAGE = parseFloat(process.env.ALERT_PERCENTAGE),
+    SENDING_EMAILS = process.env.SENDING_EMAILS === 'true',
     PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -39,19 +40,30 @@ app.post('/v1/alerts/:interval', async (req, res, next) => {
         });
         // If we have some big changes, send an email about it
         if (bigChanges.length > 0) {
-            // Compute the subject and body of the email
-            const subject = bigChanges.map(change => `${change.coinPrice.prettyName()} ${change.percentChange > 0 ? 'up' : 'down'}`).join(', ');
-            const lines = [{
-                style: 'color: black',
-                text: `${date.toUTCString()} - Significant changes in the last ${MINUTES} minutes:`
-            }];
-            bigChanges.forEach(change => lines.push({
-                style: `color: ${change.percentChange > 0 ? 'green' : 'red'}`,
-                text: `${change.coinPrice.coin}: ${change.coinPrice.prettyPrice()}, change: ${change.percentChange.toPrecision(3)} %`
-            }));
-            const body = Mailer.buildBody(lines);
+            const currenciesToGetRecipientsFor = bigChanges.map(change => change.coinPrice.coin);
+            const recipients = await Recipients.fetch({ currencies: currenciesToGetRecipientsFor });
             // Send the email
-            Mailer.sendEmail(subject, body);
+            recipients.forEach(recipient => {
+                const changesForRecipient = bigChanges.filter(change => {
+                    const coinCode = change.coinPrice.coin;
+                    return !!recipient.currencies[coinCode];
+                });
+                const subject = changesForRecipient.map(change => `${change.coinPrice.prettyName()} ${change.percentChange > 0 ? 'up' : 'down'}`).join(', ');
+                const body = Mailer.buildBody({
+                    recipient,
+                    date: date.toUTCString(),
+                    period: MINUTES,
+                    changes: changesForRecipient.map(change => ({
+                        color: change.percentChange > 0 ? 'green' : 'red',
+                        coinSymbol: change.coinPrice.coin,
+                        prettyPrice: change.coinPrice.prettyPrice(),
+                        percentChange: change.percentChange.toPrecision(3)
+                    }))
+                });
+                if (SENDING_EMAILS) {
+                    Mailer.sendEmail(recipient, subject, body);
+                }
+            });
         } else {
             console.log('Stable price. No need to send email.');
         }

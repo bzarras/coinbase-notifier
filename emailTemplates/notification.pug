@@ -1,0 +1,8 @@
+html
+    head
+    body
+        p #{date} - Significant changes in the last #{period} minutes:
+        - for (var change of changes)
+            p(style=`color: ${change.color}`) #{change.coinSymbol}: #{change.prettyPrice}, change: #{change.percentChange} %
+        p(style="font-size: 10px;")
+            a(href!=`https://www.coinwatch.fyi/unsubscribe?email=${recipient.email}&phrase=${recipient.phrase}`) unsubscribe

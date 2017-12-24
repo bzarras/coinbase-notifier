@@ -2,6 +2,9 @@
 
 const AWS = require('aws-sdk'),
     Promise = require('bluebird'),
+    path = require('path'),
+    pug = require('pug'),
+    renderEmail = pug.compileFile(path.resolve(__dirname, '../../emailTemplates/notification.pug')),
     TABLE_NAME = process.env.RECIPIENT_TABLE_NAME,
     charset = 'utf-8';
 
@@ -17,24 +20,31 @@ const scanRecipientsAsync = Promise.promisify(dynamoClient.scan, { context: dyna
 const sendEmailAsync = Promise.promisify(SES.sendEmail, { context: SES });
 
 class Recipients {
-    static async fetchAll () {
+    // TODO: Add a recipient cache that invalidates every hour, so we only fetch new recipients once an hour
+    static async fetch ({ currencies }) {
         let data = await scanRecipientsAsync({ TableName: TABLE_NAME });
-        return data.Items.map(item => item.email);
+        let filteredRecipients = data.Items.filter(item => {
+            for (let currency of currencies) {
+                if (item.currencies[currency]) return true;
+            }
+            return false;
+        });
+        return filteredRecipients;
     }
 }
 
 class Mailer {
     /**
      * Takes a subject string and body html string and sends an email using SES
+     * @param {Object} recipient Recipient object from DynamoDB
      * @param {String} subject 
-     * @param {String} body   should be html
+     * @param {String} body      should be html
      */
-    static async sendEmail (subject, body) {
-        const recipients = await Recipients.fetchAll();
+    static async sendEmail (recipient, subject, body) {
         const mailOptions = {
-            Source: '"Coinbase Watcher" <benzarras@gmail.com>',
+            Source: '"coinwatch" <benzarras@gmail.com>', // TODO: use a different source email
             Destination: {
-                ToAddresses: recipients
+                ToAddresses: [recipient.email]
             },
             Message: {
                 Subject: {
@@ -51,26 +61,21 @@ class Mailer {
         };
         try {
             const data = await sendEmailAsync(mailOptions);
-            console.log(`Successfully sent email.`);
+            console.log(`Successfully sent email to ${recipient.email}`);
         } catch (err) {
             console.log(err, err.message);
         }
     }
 
     /**
-     * Takes an array of ojects that have a 'style' property and 'text' property
-     * @param {Array<Object>} lines
+     * 
+     * @param {Object} data
      * @return {String}
      */
-    static buildBody (lines) {
-        let html = `<html>
-        <head></head>
-        <body>
-        ${lines.map(line => `<p style="${line.style}">${line.text}</p>`).join('')}
-        </body>
-        </html>`;
-        return html;
+    static buildBody (data) {
+        return renderEmail(data);
     }
 }
 
-module.exports = Mailer;
+exports.Mailer = Mailer;
+exports.Recipients = Recipients;
