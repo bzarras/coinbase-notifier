@@ -8,5 +8,9 @@ module.exports = {
      */
     minutesToMillis (minutes) {
         return minutes * 60 * 1000;
+    },
+
+    hoursToMillis (hours) {
+        return hours * 60 * 60 * 1000;
     }
 };

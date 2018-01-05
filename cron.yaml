@@ -3,3 +3,6 @@ cron:
 - name: "five-minute-alert"
   url: "/v1/alerts/5"
   schedule: "*/5 * * * *"
+- name: "daily-update"
+  url: "/v1/daily"
+  schedule: "0 12 * * *"
