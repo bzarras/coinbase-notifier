@@ -3,6 +3,7 @@
 require('dotenv').config();
 
 const express = require('express'),
+    log = require('winston'),
     { Mailer, Recipients } = require('./services/Mailer'),
     PriceMonitor = require('./PriceMonitor'),
     ALERT_PERCENTAGE = parseFloat(process.env.ALERT_PERCENTAGE),
@@ -17,7 +18,7 @@ const dailyMonitor = new PriceMonitor({ currencies });
 app.post('/v1/alerts/:interval', async (req, res, next) => {
     const MINUTES = req.params.interval;
     const date = new Date();
-    console.log(`${date.toUTCString()} Performing analysis for ${MINUTES} min interval`);
+    log.info(`${date.toUTCString()} Performing analysis for ${MINUTES} min interval`);
     try {
         await fiveMinuteMonitor.fetchNewPrices();
         const bigChanges = fiveMinuteMonitor.getChanges({ thresholdPercentage: ALERT_PERCENTAGE });
@@ -48,17 +49,17 @@ app.post('/v1/alerts/:interval', async (req, res, next) => {
                 }
             });
         } else {
-            console.log('Stable price. No need to send email.');
+            log.info('Stable price. No need to send email.');
         }
         res.sendStatus(200); // NEED to return 200 for AWS worker environment. Even 204 is considered an error.
     } catch (err) {
-        console.log(err);
+        log.error(err);
         res.sendStatus(200); // Still returning 200 here because we don't want AWS to resend the POST.
     }
 });
 
 app.post('/v1/daily', async (req, res, next) => {
-    console.log('Fetching daily prices');
+    log.info('Fetching daily prices');
     try {
         await dailyMonitor.fetchNewPrices();
         const recipients = await Recipients.fetchAll();
@@ -80,11 +81,11 @@ app.post('/v1/daily', async (req, res, next) => {
         });
         res.sendStatus(200);
     } catch (err) {
-        console.log(err);
+        log.error(err);
         res.sendStatus(200);
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}`);
+    log.info(`App listening on port ${PORT}`);
 });

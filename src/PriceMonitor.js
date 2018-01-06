@@ -7,6 +7,8 @@ class PriceMonitor {
     constructor ({ currencies }) {
         this.currencies = currencies;
         this.queues = currencies.map(currency => new PriceQueue(currency, 2));
+        // Initialize with latest prices
+        this.fetchNewPrices();
     }
 
     async fetchNewPrices () {
